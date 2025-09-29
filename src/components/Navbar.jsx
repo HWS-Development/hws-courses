@@ -3,21 +3,34 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthProvider';
+import { supabase } from '../lib/supabaseClient';
+import logo from '../assets/HWS-removebg-preview.png';
 
 export default function Navbar() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const [q, setQ] = useState(params.get('q') || '');
+  const [busyLogout, setBusyLogout] = useState(false);
 
-  useEffect(() => {
-    setQ(params.get('q') || '');
-  }, [search]);
+  useEffect(() => setQ(params.get('q') || ''), [search]);
 
   const submit = (e) => {
     e.preventDefault();
     navigate(q ? `/?q=${encodeURIComponent(q)}` : '/');
+  };
+
+  const doLogout = async () => {
+    try {
+      setBusyLogout(true);
+      await supabase.auth.signOut(); // no scope/global; let SDK attach token
+      navigate('/auth');             // hard gate after logout
+    } finally {
+      setBusyLogout(false);
+    }
   };
 
   return (
@@ -27,7 +40,7 @@ export default function Navbar() {
           {/* Left: Brand */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-orange to-brand-blue" />
+              <img src={logo} alt="HWS Logo" className="h-8 w-auto select-none" draggable="false" />
               <span className="font-bold text-slate-800">{t('brand.title')}</span>
             </Link>
           </div>
@@ -46,9 +59,27 @@ export default function Navbar() {
             </div>
           </form>
 
-          {/* Right: Language Switcher */}
-          <div className="flex justify-end">
+          {/* Right: Language + Auth */}
+          <div className="flex items-center gap-3 justify-end">
             <LanguageSwitcher />
+            {user ? (
+              <>
+                <span className="hidden sm:block text-sm text-slate-600 max-w-[160px] truncate">
+                  {user.email}
+                </span>
+                <button
+                  className="btn btn-secondary disabled:opacity-60"
+                  onClick={doLogout}
+                  disabled={busyLogout}
+                >
+                  {busyLogout ? t('home.loading') : t('auth.logout')}
+                </button>
+              </>
+            ) : (
+              <Link to="/auth" className="btn btn-secondary">
+                {t('auth.signIn')}
+              </Link>
+            )}
           </div>
         </div>
       </div>

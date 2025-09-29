@@ -1,17 +1,34 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Watch from './pages/Watch';
-import Navbar from './components/Navbar'; // ⬅️ new
+import Navbar from './components/Navbar';
+import AuthPage from './pages/Auth';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Navbar />  {/* ⬅️ replaces old header */}
+      <Navbar />
 
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/watch/:videotitle" element={<Watch />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/watch/:videotitle"
+            element={
+              <ProtectedRoute>
+                <Watch />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
 

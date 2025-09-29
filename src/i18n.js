@@ -37,6 +37,25 @@ const resources = {
         shareWhatsApp: 'مشاركة واتساب',
         shareEmail: 'مشاركة عبر البريد',
       },
+      auth: {
+        createAccount: 'إنشاء حساب',
+        signIn: 'تسجيل الدخول',
+        email: 'البريد الإلكتروني',
+        password: 'كلمة المرور',
+        register: 'تسجيل',
+        or: 'أو',
+        continueWithGoogle: 'المتابعة عبر Google',
+        checkEmail: 'تحقق من بريدك الإلكتروني لتأكيد الحساب.',
+        somethingWrong: 'حدث خطأ ما',
+        haveAccount: 'لديك حساب مسبقاً؟',
+        newHere: 'مستخدم جديد؟',
+        logout: 'تسجيل الخروج',
+        forgot: 'نسيت كلمة المرور؟',
+        resetPassword: 'إعادة تعيين كلمة المرور',
+        sendResetLink: 'إرسال رابط إعادة التعيين',
+        backToLogin: 'الرجوع لتسجيل الدخول',
+      },
+      
       lang: { label: 'اللغة', ar: 'العربية', fr: 'الفرنسية', en: 'الإنجليزية' },
     },
   },
@@ -75,6 +94,26 @@ const resources = {
         shareWhatsApp: 'Partager sur WhatsApp',
         shareEmail: 'Partager par e-mail',
       },
+      auth: {
+        createAccount: 'Créer un compte',
+        signIn: 'Se connecter',
+        email: 'E-mail',
+        password: 'Mot de passe',
+        register: 'S’inscrire',
+        or: 'ou',
+        continueWithGoogle: 'Continuer avec Google',
+        checkEmail: 'Vérifiez votre e-mail pour confirmer votre compte.',
+        somethingWrong: 'Une erreur est survenue',
+        haveAccount: 'Vous avez déjà un compte ?',
+        newHere: 'Nouveau ici ?',
+        logout: 'Se déconnecter',
+        forgot: 'Mot de passe oublié ?',
+        resetPassword: 'Réinitialiser le mot de passe',
+        sendResetLink: 'Envoyer le lien de réinitialisation',
+        backToLogin: 'Retour à la connexion',
+      }
+      ,
+      
       lang: { label: 'Langue', ar: 'Arabe', fr: 'Français', en: 'Anglais' },
     },
   },
@@ -113,6 +152,26 @@ const resources = {
         shareWhatsApp: 'Share on WhatsApp',
         shareEmail: 'Share via Email',
       },
+      auth: {
+        createAccount: 'Create account',
+        signIn: 'Sign in',
+        email: 'Email',
+        password: 'Password',
+        register: 'Register',
+        or: 'or',
+        continueWithGoogle: 'Continue with Google',
+        checkEmail: 'Check your email to confirm your account.',
+        somethingWrong: 'Something went wrong',
+        haveAccount: 'Already have an account?',
+        newHere: 'New here?',
+        logout: 'Logout',
+        forgot: 'Forgot password?',
+        resetPassword: 'Reset password',
+        sendResetLink: 'Send reset link',
+        backToLogin: 'Back to login',
+      }
+      ,
+      
       lang: { label: 'Language', ar: 'Arabic', fr: 'French', en: 'English' },
     },
   },
@@ -120,7 +179,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: 'ar', // default language
+  lng: 'en', // default language
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
