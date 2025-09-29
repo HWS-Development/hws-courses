@@ -23,9 +23,10 @@ export function AuthProvider({ children }) {
     <AuthCtx.Provider value={{ session, user: session?.user ?? null, loading }}>
       {children}
     </AuthCtx.Provider>
-  );
+  ); 
 }
 
 export function useAuth() {
   return useContext(AuthCtx);
 }
+ 
