@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { youtubeThumbFromUrl, splitToList } from '../utils/parsing';
 import SidebarFilters from '../components/SidebarFilters';
 
-const PAGE_SIZE = 20; // show more per page to fill width
+const PAGE_SIZE = 21;// show more per page to fill width
 
 export default function Home() {
   const { t } = useTranslation();
@@ -128,7 +128,7 @@ export default function Home() {
                 sm:grid-cols-2
                 md:grid-cols-3
                 xl:grid-cols-4
-                2xl:grid-cols-5
+                2xl:grid-cols-3
               "
             >
               {rows.map((v) => {

@@ -10,6 +10,21 @@
 .container-wide { 
     @apply w-full max-w-[1600px] mx-auto px-4 lg:px-6;
   }
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  .font-space { font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"; }
+  
+
+  @keyframes hws-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  .animate-shake { animation: hws-shake 350ms ease-in-out; }
+  
   
 body { @apply bg-[var(--page)] text-slate-900; }
 .container-std { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }

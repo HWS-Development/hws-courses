@@ -27,15 +27,12 @@ export default function SidebarFilters({
   return (
     <aside className="sticky top-16 h-[calc(100vh-4rem)] overflow-auto pe-1">
       {/* Search (optional—can hide if you only use navbar search) */}
-      <div className="mb-4">
-        <input
-          type="text"
-          className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:outline-none"
-          placeholder={t('filters.searchPlaceholder')}
-          value={local.q}
-          onChange={(e) => setLocal({ ...local, q: e.target.value, page: 1 })}
-        />
+      <div className="flex flex-col gap-2">
+        <button onClick={reset} className="btn btn-secondary">
+          {t('filters.reset')}
+        </button>
       </div>
+      
 
       {/* Categories (checkbox multi-select) */}
       <div className="mb-6">
@@ -85,13 +82,11 @@ export default function SidebarFilters({
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
         <button onClick={apply} className="btn btn-primary">
           {t('filters.apply')}
         </button>
-        <button onClick={reset} className="btn btn-secondary">
-          {t('filters.reset')}
-        </button>
+       
       </div>
     </aside>
   );

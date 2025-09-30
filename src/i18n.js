@@ -36,7 +36,10 @@ const resources = {
         related: 'فيديوهات ذات صلة',
         shareWhatsApp: 'مشاركة واتساب',
         shareEmail: 'مشاركة عبر البريد',
+
       },
+      
+
       auth: {
         createAccount: 'إنشاء حساب',
         signIn: 'تسجيل الدخول',
@@ -54,6 +57,17 @@ const resources = {
         resetPassword: 'إعادة تعيين كلمة المرور',
         sendResetLink: 'إرسال رابط إعادة التعيين',
         backToLogin: 'الرجوع لتسجيل الدخول',
+        loading: 'جارٍ...',
+capsOn: 'Caps Lock مفعّل',
+show: 'إظهار',
+hide: 'إخفاء',
+remember: 'تذكّرني',
+rules: '8+ أحرف، حروف كبيرة/صغيرة، رقم ورمز',
+strength: { veryWeak: 'ضعيف جدًا', weak: 'ضعيف', ok: 'مقبول', good: 'جيد', strong: 'قوي' },
+errEmailRequired: 'البريد مطلوب',
+errEmailInvalid: 'بريد غير صالح',
+errPwShort: 'كلمة المرور أقصر من المطلوب',
+
       },
       
       lang: { label: 'اللغة', ar: 'العربية', fr: 'الفرنسية', en: 'الإنجليزية' },
@@ -111,6 +125,18 @@ const resources = {
         resetPassword: 'Réinitialiser le mot de passe',
         sendResetLink: 'Envoyer le lien de réinitialisation',
         backToLogin: 'Retour à la connexion',
+        loading: 'Chargement…',
+capsOn: 'Verrouillage maj. activé',
+show: 'Afficher',
+hide: 'Masquer',
+remember: 'Se souvenir de moi',
+rules: '≥8 caractères, maj/min, nombre & symbole',
+strength: { veryWeak: 'Très faible', weak: 'Faible', ok: 'Correct', good: 'Bon', strong: 'Fort' },
+errEmailRequired: 'E-mail requis',
+errEmailInvalid: 'E-mail invalide',
+errPwShort: 'Mot de passe trop court',
+
+
       }
       ,
       
@@ -169,6 +195,17 @@ const resources = {
         resetPassword: 'Reset password',
         sendResetLink: 'Send reset link',
         backToLogin: 'Back to login',
+        loading: 'Loading…',
+capsOn: 'Caps Lock is on',
+show: 'Show',
+hide: 'Hide',
+remember: 'Remember me',
+rules: '8+ chars, upper/lower, number & symbol',
+strength: { veryWeak: 'Very weak', weak: 'Weak', ok: 'Okay', good: 'Good', strong: 'Strong' },
+errEmailRequired: 'Email is required',
+errEmailInvalid: 'Invalid email',
+errPwShort: 'Password too short',
+
       }
       ,
       
