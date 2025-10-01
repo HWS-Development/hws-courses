@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+
 export default function SidebarFilters({
   value,                 // { q, categories:[], language, page }
   onChange,
@@ -64,22 +65,30 @@ export default function SidebarFilters({
 
       {/* Language (single select) */}
       <div className="mb-6">
-        <h4 className="font-semibold mb-2">{t('filters.allLanguages')}</h4>
-        <select
-          className="w-full h-10 rounded-lg border border-slate-300 px-3"
-          value={local.language}
-          onChange={(e) =>
-            setLocal({ ...local, language: e.target.value, page: 1 })
-          }
-        >
-          <option value="">{t('filters.allLanguages')}</option>
-          {languageOptions.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
-      </div>
+  <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">
+    {t('filters.allLanguages')}
+  </h4>
+  <select
+    className="
+      w-full h-10 rounded-lg border px-3
+      border-slate-300 bg-white text-slate-900
+      focus:outline-none focus:ring-2 focus:ring-brand-blue/40
+      dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100
+    "
+    value={local.language}
+    onChange={(e) =>
+      setLocal({ ...local, language: e.target.value, page: 1 })
+    }
+  >
+    <option value="">{t('filters.allLanguages')}</option>
+    {languageOptions.map((l) => (
+      <option key={l} value={l}>
+        {l}
+      </option>
+    ))}
+  </select>
+</div>
+
 
       {/* Actions */}
         <div className="flex flex-col gap-2">

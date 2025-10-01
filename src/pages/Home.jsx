@@ -5,13 +5,15 @@ import { supabase } from '../lib/supabaseClient';
 import { youtubeThumbFromUrl, splitToList } from '../utils/parsing';
 import SidebarFilters from '../components/SidebarFilters';
 
-const PAGE_SIZE = 21;// show more per page to fill width
+const PAGE_SIZE = 21;
 
 export default function Home() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 
-  // Query state (multi-select categories)
+  // ✅ NEW: mobile drawer state
+  const [showFilters, setShowFilters] = useState(false);
+
   const [query, setQuery] = useState({
     q: searchParams.get('q') || '',
     categories: [],
@@ -19,22 +21,17 @@ export default function Home() {
     page: 1,
   });
 
-  // Options for filters
   const [options, setOptions] = useState({ categories: [], languages: [] });
-
-  // Data
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // Sync q with ?q= from navbar
   useEffect(() => {
     const urlQ = searchParams.get('q') || '';
     setQuery((prev) => ({ ...prev, q: urlQ, page: 1 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Load filter options
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -54,11 +51,9 @@ export default function Home() {
     })();
   }, []);
 
-  // Fetch videos
   useEffect(() => {
     (async () => {
       setLoading(true);
-
       const from = (query.page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
@@ -97,12 +92,36 @@ export default function Home() {
     [total]
   );
 
+  // ✅ Helper: on apply filters from mobile drawer, أغلق اللوحة
+  const applyFilters = (next) => {
+    setQuery(next);
+    setShowFilters(false);
+  };
+
+  const selectedCount =
+    (query.categories?.length || 0) + (query.language ? 1 : 0);
+
   return (
     <div className="container-wide py-6">
-      {/* Layout: compact sidebar + full-width grid */}
+      {/* زر الفلاتر للموبايل فقط */}
+      <div className="lg:hidden mb-4 flex items-center justify-between">
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowFilters(true)}
+        >
+          {t('filters.apply')} / {t('filters.allCategories')}
+          {selectedCount > 0 ? (
+            <span className="ms-2 inline-block rounded-full px-2 py-0.5 text-xs bg-brand-blue/10 text-brand-blue">
+              {selectedCount}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
+      {/* تخطيط الديسكتوب */}
       <div className="grid gap-6 lg:grid-cols-[220px,1fr]">
-        {/* Sidebar (compact, sticks under navbar) */}
-        <div className="sticky top-16 self-start">
+        {/* Sidebar ثابت على الديسكتوب فقط */}
+        <div className="sticky top-16 self-start hidden lg:block">
           <SidebarFilters
             value={query}
             onChange={setQuery}
@@ -111,7 +130,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Content grid fills the rest */}
+        {/* المحتوى */}
         <div>
           {loading ? (
             <div className="py-12 text-center">{t('home.loading')}</div>
@@ -208,6 +227,42 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* ✅ Mobile Drawer (filters) */}
+      {showFilters && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 z-50 lg:hidden"
+            onClick={() => setShowFilters(false)}
+          />
+          {/* Panel */}
+          <div
+            className="
+              fixed inset-y-0 left-0 w-80 max-w-[85vw]
+              bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700
+              z-50 lg:hidden
+              shadow-xl
+              animate-[slideIn_.2s_ease-out]
+            "
+          >
+            <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="font-semibold">Filters</h3>
+              <button className="btn btn-secondary" onClick={() => setShowFilters(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="p-4 overflow-auto h-[calc(100vh-4rem)]">
+              <SidebarFilters
+                value={query}
+                onChange={applyFilters}  
+                categoryOptions={options.categories}
+                languageOptions={options.languages}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

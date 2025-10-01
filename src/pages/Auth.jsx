@@ -251,7 +251,7 @@ export default function AuthPage() {
               <button
                 onClick={loginGoogle}
                 disabled={busy}
-                className="btn w-full h-11 border hover:bg-slate-50 disabled:opacity-60"
+                className="btn w-full h-11 border hover:bg-slate-50 btn-secondary disabled:opacity-60"
               >
                 {t('auth.continueWithGoogle')}
               </button>
