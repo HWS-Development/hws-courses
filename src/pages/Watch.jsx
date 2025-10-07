@@ -101,7 +101,7 @@ export default function Watch() {
 
           {/* Share */}
           <div className="card p-4 mb-4">
-            <h3 className="font-semibold mb-3">{t('watch.share')}</h3>
+            <h3 className="font-semibold mb-3">{t('watch.share')}</h3>   
             <ShareButtons title={v.videotitle} />
           </div>
 
