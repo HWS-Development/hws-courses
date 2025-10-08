@@ -13,8 +13,10 @@ export default function Navbar() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search } = location;
   const params = new URLSearchParams(search);
+  
 
   const [q, setQ] = useState(params.get('q') || '');
   const [busyLogout, setBusyLogout] = useState(false);
@@ -33,8 +35,11 @@ export default function Navbar() {
   // mobile sheet
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // detect auth page (we'll keep it only to optionally hide the hamburger)
+  const onAuth = location.pathname.startsWith('/auth');
+
   // sync search box with URL
-  useEffect(() => setQ(params.get('q') || ''), [search]);
+  useEffect(() => setQ(params.get('q') || ''), [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = (e) => {
     e.preventDefault();
@@ -87,17 +92,23 @@ export default function Navbar() {
       {/* Header */}
       <header className="header-glass sticky top-0 z-40">
         <div className="container-std">
-          <div className="h-16 grid grid-cols-[auto,1fr,auto] items-center gap-3">
-            {/* Left: Brand + Mobile menu button */}
+          <div
+            className={
+              // Always 3 columns so search is centered even on /auth
+              'h-16 grid grid-cols-[auto,1fr,auto] items-center gap-3'
+            }
+          >
+            {/* Left: Brand + Mobile menu button (optionally hide hamburger on /auth) */}
             <div className="flex items-center gap-2">
-              {/* Mobile menu (hamburger) */}
-              <button
-                className="sm:hidden h-10 w-10 grid place-items-center rounded-xl border border-slate-300 bg-white/80 hover:bg-slate-50"
-                aria-label="Open menu"
-                onClick={() => setMobileOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
+              {!onAuth && (
+                <button
+                  className="sm:hidden h-10 w-10 grid place-items-center rounded-xl border border-slate-300 bg-white/80 hover:bg-slate-50"
+                  aria-label="Open menu"
+                  onClick={() => setMobileOpen(true)}
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+              )}
 
               <Link to="/" className="flex items-center gap-2">
                 <img
@@ -109,8 +120,8 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Center: Search */}
-            <form onSubmit={submit} className="w-full">
+            {/* Center: Search (always visible) */}
+            {location.pathname !== '/auth' && <form onSubmit={submit} className="w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -121,7 +132,7 @@ export default function Navbar() {
                   className="w-full h-11 pl-10 pr-3 rounded-xl input"
                 />
               </div>
-            </form>
+            </form>}
 
             {/* Right controls (desktop) */}
             <div className="hidden sm:flex items-center gap-3 justify-end">
@@ -182,6 +193,7 @@ export default function Navbar() {
                       <button
                         onClick={doLogout}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700"
+                        disabled={busyLogout}
                       >
                         <LogOut className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                         <span>{t('auth.logout')}</span>
@@ -207,15 +219,13 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile overlay + sheet (outside header for proper stacking) */}
-      {mobileOpen && (
+      {/* Mobile overlay + sheet (kept as-is; still disabled from hamburger on /auth) */}
+      {!onAuth && mobileOpen && (
         <>
-          {/* overlay */}
           <div
             className="fixed inset-0 bg-black/40 z-[9998] sm:hidden"
             onClick={() => setMobileOpen(false)}
           />
-          {/* sheet */}
           <div
             className="
               fixed inset-y-0 right-0 w-80 max-w-[85vw]
@@ -223,7 +233,6 @@ export default function Navbar() {
               z-[9999] sm:hidden shadow-xl
             "
           >
-            {/* header bar */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
               <div className="font-medium">{t('home.heading') || 'Menu'}</div>
               <button
@@ -235,7 +244,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* content */}
             <div className="p-4 space-y-6">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
@@ -275,6 +283,7 @@ export default function Navbar() {
                     <button
                       onClick={doLogout}
                       className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-600 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      disabled={busyLogout}
                     >
                       <LogOut className="w-4 h-4" />
                       <span>{t('auth.logout')}</span>

@@ -6,40 +6,121 @@ import { useAuth } from '../context/AuthProvider';
 import logo from '../assets/HWS-removebg-preview.png';
 import { Eye, EyeOff } from 'lucide-react';
 
+/* ===== Helpers: تخزين الوجهة + تنظيف التخزين ===== */
+const NEXT_KEY = 'hws_next';
+
+// خزّن الوجهة في localStorage كـ fallback
+const setNext = (v) => { try { if (v) localStorage.setItem(NEXT_KEY, v); } catch {} };
+const getNext = () => { try { return localStorage.getItem(NEXT_KEY) || ''; } catch { return ''; } };
+const clearNext = () => { try { localStorage.removeItem(NEXT_KEY); } catch {} };
+
+// امسح فقط مفاتيح تطبيقك (واترك مفاتيح Supabase sb-*)
+function clearAppStorage() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (k.startsWith('sb-')) continue;       // اترك جلسة Supabase
+      if (k.startsWith('hws_')) keys.push(k);  // امسح مفاتيح تطبيقك
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    console.error('Error clearing app storage');
+  }
+}
+
+function safeDecode(v) {
+  if (!v) return '';
+  try { return decodeURIComponent(v); } catch {
+    console.error('Error decoding next route', v);
+  }
+  try { return decodeURIComponent(decodeURIComponent(v)); } catch {
+    console.error('Error decoding next route', v);
+  }
+  return v;
+}
+
+// طبع قيمة next لمسار داخلي آمن
+function normalizeNext(raw) {
+  let v = String(raw || '').trim();
+  v = safeDecode(v);
+
+  // لو كان رابط مطلق، خذ الجزء النسبي فقط
+  try {
+    const u = new URL(v, window.location.origin);
+    if (u.origin === window.location.origin) {
+      v = u.pathname + (u.search || '') + (u.hash || '');
+    }
+  } catch {
+    console.error('Error normalizing next route', v);
+  }
+
+  if (!v || v === '#' || v === '/#') return '/';
+  if (!v.startsWith('/')) v = '/' + v;
+  if (v.startsWith('/auth')) return '/';
+
+  return v;
+}
+
+// لا تستخدم encodeURIComponent لكل المسار؛ استخدم encodeURI حتى لا يكسر '/'
+function encodePathForNav(path) {
+  return encodeURI(path || '/');
+}
+
 export default function AuthPage() {
   const { t } = useTranslation();
   const { session } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from || '/';
 
-  // ui / form state
+  // 1) التقط الوجهة من state أو query و خزّنها كـ fallback
+  useEffect(() => {
+    const stateFrom = location.state?.from;
+    const queryNext = new URLSearchParams(location.search).get('next');
+    const chosen = stateFrom || queryNext;
+    if (chosen) setNext(chosen);
+  }, [location.state, location.search]);
+
+  // 2) حدّد الوجهة الموثوقة بالترتيب: query → state → localStorage → '/'
+  const computedNext = useMemo(() => {
+    const queryNext = new URLSearchParams(location.search).get('next');
+    const stateFrom = location.state?.from;
+    const stored = getNext();
+    const chosen = queryNext || stateFrom || stored || '/';
+    return normalizeNext(chosen);
+  }, [location.state, location.search]);
+
+  // 3) عند وجود session: نظّف مفاتيحك وارجع للوجهة بأمان
+  useEffect(() => {
+    if (session) {
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+      const target = encodePathForNav(computedNext);
+      clearNext();
+      clearAppStorage();
+      nav(target, { replace: true });
+    }
+  }, [session, computedNext, nav]);
+
+  /* =================== UI (نفس شاشتك الحالية) =================== */
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'reset'
   const [email, setEmail] = useState('');
   const [emailErr, setEmailErr] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [capsOn, setCapsOn] = useState(false);
-  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const [formError, setFormError] = useState(false); // to trigger shake
+  const [formError, setFormError] = useState(false);
 
-  // already signed in? skip
-  useEffect(() => {
-    if (session) nav(redirectTo, { replace: true });
-  }, [session, nav, redirectTo]);
-
-  // --- helpers
-  const validateEmail = (v) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).toLowerCase());
-
+  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).toLowerCase());
   const onEmailBlur = () => {
-    if (!email) return setEmailErr(t('auth.errEmailRequired'));
-    setEmailErr(validateEmail(email) ? '' : t('auth.errEmailInvalid'));
+    if (!email) return setEmailErr(t('auth.errEmailRequired') || 'Email is required');
+    setEmailErr(validateEmail(email) ? '' : (t('auth.errEmailInvalid') || 'Invalid email'));
   };
 
-  // password strength (only in register mode)
   const strength = useMemo(() => {
     if (mode !== 'register') return { score: 0, label: '' };
     let s = 0;
@@ -49,54 +130,53 @@ export default function AuthPage() {
     if (/\d/.test(password)) s++;
     if (/[^A-Za-z0-9]/.test(password)) s++;
     const labels = [
-      t('auth.strength.veryWeak'),
-      t('auth.strength.weak'),
-      t('auth.strength.ok'),
-      t('auth.strength.good'),
-      t('auth.strength.strong'),
+      t('auth.strength.veryWeak') || 'Very weak',
+      t('auth.strength.weak') || 'Weak',
+      t('auth.strength.ok') || 'OK',
+      t('auth.strength.good') || 'Good',
+      t('auth.strength.strong') || 'Strong',
     ];
     return { score: Math.min(s, 5), label: labels[Math.max(0, s - 1)] };
   }, [password, mode, t]);
 
-  // --- submit
   async function handleEmailAuth(e) {
     e.preventDefault();
-    if (busy) return; // prevent double clicks
+    if (busy) return;
     setBusy(true); setMsg(''); setFormError(false);
 
-    // minimal client-side checks
     if (!email || !validateEmail(email)) {
-      setEmailErr(t('auth.errEmailInvalid'));
-      setBusy(false);
-      setFormError(true);
+      setEmailErr(t('auth.errEmailInvalid') || 'Invalid email');
+      setBusy(false); setFormError(true);
       return;
     }
     if (mode !== 'reset' && password.length < 6) {
-      setMsg(t('auth.errPwShort'));
-      setBusy(false);
-      setFormError(true);
+      setMsg(t('auth.errPwShort') || 'Password too short');
+      setBusy(false); setFormError(true);
       return;
     }
+
+    // خزّن الوجهة الآن أيضًا (لو صار refresh أثناء العملية)
+    const queryNext = new URLSearchParams(location.search).get('next');
+    const stateFrom = location.state?.from;
+    setNext(queryNext || stateFrom || getNext() || '/');
 
     try {
       if (mode === 'register') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMsg(t('auth.checkEmail'));
+        setMsg(t('auth.checkEmail') || 'Check your email to confirm.');
       } else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // “remember me”: supabase already persists session; you can clear on logout.
-        nav(redirectTo, { replace: true });
       } else if (mode === 'reset') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: window.location.origin + '/auth' + (location.search || ''),
         });
         if (error) throw error;
-        setMsg(t('auth.checkEmail'));
+        setMsg(t('auth.checkEmail') || 'Check your email for a reset link.');
       }
     } catch (err) {
-      setMsg(err.message || t('auth.somethingWrong'));
+      setMsg(err.message || t('auth.somethingWrong') || 'Something went wrong');
       setFormError(true);
     } finally {
       setBusy(false);
@@ -107,13 +187,14 @@ export default function AuthPage() {
     if (busy) return;
     setBusy(true); setMsg(''); setFormError(false);
     try {
+      // ارجع إلى نفس /auth مع نفس الـ ?next بعد OAuth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin }
+        options: { redirectTo: `${window.location.origin}/auth${location.search}` }
       });
       if (error) throw error;
     } catch (err) {
-      setMsg(err.message || t('auth.somethingWrong'));
+      setMsg(err.message || t('auth.somethingWrong') || 'Something went wrong');
       setFormError(true);
       setBusy(false);
     }
@@ -122,31 +203,34 @@ export default function AuthPage() {
   return (
     <div className="container-std py-10">
       <div className="mx-auto w-full max-w-md">
-        {/* Header: logo + title with breathing space */}
+        {/* Header */}
         <div className="flex flex-col items-center gap-4 mb-6">
           <div className="rounded-2xl bg-slate-50 border border-slate-200/70 shadow-sm px-5 py-3">
             <img src={logo} alt="HWS — Hospitality Web Services" className="h-10 w-auto" />
           </div>
           <h1 className="text-2xl font-bold leading-tight">
-            {mode === 'register'
-              ? t('auth.createAccount')
-              : mode === 'reset'
-              ? t('auth.resetPassword')
-              : t('auth.signIn')}
+            {mode === 'register' ? (t('auth.createAccount') || 'Create account')
+             : mode === 'reset' ? (t('auth.resetPassword') || 'Reset password')
+             : (t('auth.signIn') || 'Sign in')}
           </h1>
+
+          {computedNext && computedNext !== '/' && (
+            <p className="text-xs text-slate-500">
+              {t('auth.youWillReturn') || 'You will be redirected back after signing in.'}
+            </p>
+          )}
         </div>
 
         <div className={`card p-6 md:p-7 space-y-6 ${formError ? 'animate-shake' : ''}`}>
           <form onSubmit={handleEmailAuth} className="space-y-5">
-            {/* Email */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium">{t('auth.email')}</label>
+              <label className="block text-sm font-medium">{t('auth.email') || 'Email'}</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); if (emailErr) setEmailErr(''); }}
                 onBlur={onEmailBlur}
-                className="input w-full h-11 focus:ring-2 focus:ring-brand-blue/40 focus:border-brand-blue/60"
+                className="input w-full h-11"
                 placeholder="you@example.com"
                 autoComplete="email"
                 disabled={busy}
@@ -154,135 +238,82 @@ export default function AuthPage() {
               {!!emailErr && <p className="text-xs text-red-600">{emailErr}</p>}
             </div>
 
-            {/* Password (hidden on reset) */}
             {mode !== 'reset' && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">{t('auth.password')}</label>
-                  {capsOn && (
-                    <span className="text-xs text-amber-600">{t('auth.capsOn')}</span>
-                  )}
+                  <label className="text-sm font-medium">{t('auth.password') || 'Password'}</label>
+                  {capsOn && (<span className="text-xs text-amber-600">{t('auth.capsOn') || 'Caps Lock is ON'}</span>)}
                 </div>
-
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyUp={(e) => setCapsOn(e.getModifierState && e.getModifierState('CapsLock'))}
-                    className="input w-full h-11 pr-24 focus:ring-2 focus:ring-brand-blue/40 focus:border-brand-blue/60"
+                    className="input w-full h-11 pr-24"
                     placeholder="••••••••"
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                     disabled={busy}
                   />
-                 <div className="absolute inset-y-0 right-2 flex items-center gap-2 pr-2">
-  <button
-    type="button"
-    onClick={() => setShowPw((s) => !s)}
-    className="p-2 rounded-md hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/40"
-    disabled={busy}
-  >
-    {showPw ? <EyeOff className="w-5 h-5 text-slate-600" /> : <Eye className="w-5 h-5 text-slate-600" />}
-  </button>
-</div>
-                </div>
-
-                {/* Strength + rules only in register */}
-                {mode === 'register' && (
-                  <div className="space-y-1">
-                    <div className="h-2 rounded bg-slate-100 overflow-hidden">
-                      <div
-                        className={`h-2 transition-all`}
-                        style={{
-                          width: `${(strength.score / 5) * 100}%`,
-                          background:
-                            strength.score >= 4
-                              ? 'var(--brand-green, #16a34a)'
-                              : strength.score >= 3
-                              ? 'var(--brand-orange, #f97316)'
-                              : '#ef4444'
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-600">
-                      <span>{strength.label}</span>
-                      <span>{t('auth.rules')}</span>
-                    </div>
+                  <div className="absolute inset-y-0 right-2 flex items-center gap-2 pr-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((s) => !s)}
+                      className="p-2 rounded-md hover:bg-slate-100"
+                      disabled={busy}
+                      aria-label={showPw ? (t('auth.hide') || 'Hide') : (t('auth.show') || 'Show')}
+                      title={showPw ? (t('auth.hide') || 'Hide') : (t('auth.show') || 'Show')}
+                    >
+                      {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
             )}
 
-            {/* Remember me (optional UI) */}
-            {mode !== 'reset' && (
-              <label className="flex items-center gap-2 text-sm select-none">
-                <input
-                  type="checkbox"
-                  className="size-4 rounded border-slate-300"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  disabled={busy}
-                />
-                {t('auth.remember')}
-              </label>
-            )}
-
-            {/* Submit button with loading state */}
-            <button
-              disabled={busy}
-              className="btn btn-primary w-full h-11 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {busy ? (
-                <span className="inline-flex items-center gap-2">
-                  <svg className="animate-spin size-4" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
-                    <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                  </svg>
-                  {t('auth.loading')}
-                </span>
-              ) : mode === 'register' ? t('auth.register') : mode === 'reset' ? t('auth.sendResetLink') : t('auth.signIn')}
+            <button disabled={busy} className="btn btn-primary w-full h-11 disabled:opacity-60">
+              {busy
+                ? (t('auth.loading') || 'Loading…')
+                : mode === 'register'
+                ? (t('auth.register') || 'Create account')
+                : mode === 'reset'
+                ? (t('auth.sendResetLink') || 'Send reset link')
+                : (t('auth.signIn') || 'Sign in')}
             </button>
           </form>
 
-          {/* OR + Google */}
           {mode !== 'reset' && (
             <>
-              <div className="text-center text-sm text-slate-500">{t('auth.or')}</div>
-              <button
-                onClick={loginGoogle}
-                disabled={busy}
-                className="btn w-full h-11 border hover:bg-slate-50 btn-secondary disabled:opacity-60"
-              >
-                {t('auth.continueWithGoogle')}
+              <div className="text-center text-sm text-slate-500">{t('auth.or') || 'OR'}</div>
+              <button onClick={loginGoogle} disabled={busy} className="btn w-full h-11 border hover:bg-slate-50 btn-secondary disabled:opacity-60">
+                {t('auth.continueWithGoogle') || 'Continue with Google'}
               </button>
             </>
           )}
 
-          {/* Inline global message */}
-          {msg && <div className="text-sm text-slate-700">{msg}</div>}
+          {msg && <div className="text-sm">{msg}</div>}
 
-          {/* Footer links: concise and aligned */}
           <div className="text-sm flex items-center justify-between">
             {mode === 'register' ? (
               <>
-                <span>{t('auth.haveAccount')}</span>
+                <span>{t('auth.haveAccount') || 'Already have an account?'}</span>
                 <button className="link" onClick={() => { setMode('login'); setMsg(''); }}>
-                  {t('auth.signIn')}
+                  {t('auth.signIn') || 'Sign in'}
                 </button>
               </>
             ) : mode === 'login' ? (
               <>
                 <button className="link" onClick={() => { setMode('register'); setMsg(''); }}>
-                  {t('auth.createAccount')}
+                  {t('auth.createAccount') || 'Create account'}
                 </button>
                 <button className="link" onClick={() => { setMode('reset'); setMsg(''); }}>
-                  {t('auth.forgot')}
+                  {t('auth.forgot') || 'Forgot password?'}
                 </button>
               </>
             ) : (
               <>
                 <button className="link" onClick={() => { setMode('login'); setMsg(''); }}>
-                  {t('auth.backToLogin')}
+                  {t('auth.backToLogin') || 'Back to login'}
                 </button>
                 <span />
               </>
