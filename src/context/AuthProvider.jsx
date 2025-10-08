@@ -5,7 +5,7 @@ const AuthCtx = createContext({ session: null, user: null, loading: true });
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
