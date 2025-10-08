@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 import { youtubeThumbFromUrl, splitToList } from '../utils/parsing';
@@ -13,7 +13,7 @@ export default function Home() {
 
   // ✅ NEW: mobile drawer state
   const [showFilters, setShowFilters] = useState(false);
-
+  const navigate = useNavigate();
   const [query, setQuery] = useState({
     q: searchParams.get('q') || '',
     categories: [],
@@ -27,6 +27,10 @@ export default function Home() {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
+    if (localStorage.getItem('prevLocation')) {
+      navigate(localStorage.getItem('prevLocation') || '/');
+      localStorage.removeItem('prevLocation')
+    }
     const urlQ = searchParams.get('q') || '';
     setQuery((prev) => ({ ...prev, q: urlQ, page: 1 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

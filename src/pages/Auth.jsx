@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+
+
 import { useAuth } from '../context/AuthProvider';
 import logo from '../assets/HWS-removebg-preview.png';
 import { Eye, EyeOff } from 'lucide-react';
@@ -73,7 +75,9 @@ export default function AuthPage() {
   const { session } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
+  console.log(document.referrer);
 
+  
   // 1) التقط الوجهة من state أو query و خزّنها كـ fallback
   useEffect(() => {
     const stateFrom = location.state?.from;
@@ -121,23 +125,6 @@ export default function AuthPage() {
     setEmailErr(validateEmail(email) ? '' : (t('auth.errEmailInvalid') || 'Invalid email'));
   };
 
-  const strength = useMemo(() => {
-    if (mode !== 'register') return { score: 0, label: '' };
-    let s = 0;
-    if (password.length >= 8) s++;
-    if (/[A-Z]/.test(password)) s++;
-    if (/[a-z]/.test(password)) s++;
-    if (/\d/.test(password)) s++;
-    if (/[^A-Za-z0-9]/.test(password)) s++;
-    const labels = [
-      t('auth.strength.veryWeak') || 'Very weak',
-      t('auth.strength.weak') || 'Weak',
-      t('auth.strength.ok') || 'OK',
-      t('auth.strength.good') || 'Good',
-      t('auth.strength.strong') || 'Strong',
-    ];
-    return { score: Math.min(s, 5), label: labels[Math.max(0, s - 1)] };
-  }, [password, mode, t]);
 
   async function handleEmailAuth(e) {
     e.preventDefault();
